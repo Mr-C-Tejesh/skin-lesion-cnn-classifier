@@ -39,7 +39,7 @@ BATCH_SIZE = 32
 LEARNING_RATE_FROZEN = 1e-3      # Higher LR when backbone is frozen
 LEARNING_RATE_FINETUNE = 1e-4    # Lower LR for fine-tuning
 WEIGHT_DECAY = 1e-4
-NUM_EPOCHS_FROZEN = 10           # Phase 1: train classifier head only
+NUM_EPOCHS_FROZEN = 1           # Phase 1: train classifier head only (Reduced for quick verification)
 NUM_EPOCHS_FINETUNE = 20         # Phase 2: fine-tune last 2 blocks
 EARLY_STOP_PATIENCE = 7
 VAL_SPLIT = 0.2                  # 80/20 train/val split
@@ -222,7 +222,15 @@ def train_model(data_dir: str, output_dir: str = "checkpoints"):
         output_dir: Directory to save model checkpoints.
     """
     os.makedirs(output_dir, exist_ok=True)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # Device selection: CUDA > MPS (Mac) > CPU
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+        
     print(f"🔧 Using device: {device}")
 
     # ── Load Dataset ──────────────────────────────────────────────────────
@@ -310,7 +318,7 @@ def train_model(data_dir: str, output_dir: str = "checkpoints"):
         weight_decay=WEIGHT_DECAY,
     )
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.5, patience=3, verbose=True
+        optimizer, mode="min", factor=0.5, patience=3
     )
     early_stopping = EarlyStopping(patience=EARLY_STOP_PATIENCE)
 
@@ -335,7 +343,9 @@ def train_model(data_dir: str, output_dir: str = "checkpoints"):
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             best_model_state = copy.deepcopy(model.state_dict())
-            print(f"  ✅ New best model! Val Acc: {best_val_acc:.2f}%")
+            save_path = os.path.join(output_dir, "best_model.pth")
+            torch.save(best_model_state, save_path)
+            print(f"  ✅ New best model! Val Acc: {best_val_acc:.2f}% | Saved to {save_path}")
 
         # Early stopping check
         if early_stopping(val_loss):
@@ -363,7 +373,7 @@ def train_model(data_dir: str, output_dir: str = "checkpoints"):
         weight_decay=WEIGHT_DECAY,
     )
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.5, patience=3, verbose=True
+        optimizer, mode="min", factor=0.5, patience=3
     )
     early_stopping = EarlyStopping(patience=EARLY_STOP_PATIENCE)
 

@@ -6,7 +6,6 @@ Generates a professional diagnostic report containing:
     - Uploaded skin lesion image
     - Top prediction with confidence score
     - Grad-CAM heatmap visualization
-    - SHAP explanation plot
     - Medical disclaimer
 """
 
@@ -136,7 +135,6 @@ def generate_pdf_report(
     image_path: str,
     predictions: List[Tuple[str, float]],
     gradcam_path: Optional[str] = None,
-    shap_path: Optional[str] = None,
     save_path: Optional[str] = None,
 ) -> str:
     """
@@ -148,7 +146,6 @@ def generate_pdf_report(
         image_path: Path to the uploaded skin lesion image.
         predictions: List of (class_name, confidence%) tuples (top-3).
         gradcam_path: Path to the Grad-CAM overlay image.
-        shap_path: Path to the SHAP explanation plot.
         save_path: Output path for the PDF. If None, saves to temp dir.
     Returns:
         Path to the generated PDF file.
@@ -289,24 +286,6 @@ def generate_pdf_report(
 
     elements.append(Spacer(1, 12))
 
-    # ── SHAP Explanation ───────────────────────────────────────────────────
-    elements.append(Paragraph("SHAP Feature Attribution", styles["SectionHeader"]))
-    elements.append(Paragraph(
-        "The SHAP (SHapley Additive exPlanations) plot shows pixel-level contributions "
-        "to the model's classification decision. Brighter regions had stronger influence.",
-        styles["InfoValue"],
-    ))
-    elements.append(Spacer(1, 6))
-
-    if shap_path and os.path.exists(shap_path):
-        shap_img = RLImage(shap_path, width=6 * inch, height=2.2 * inch)
-        shap_img.hAlign = "CENTER"
-        elements.append(shap_img)
-    else:
-        elements.append(Paragraph(
-            "<i>SHAP explanation not available</i>", styles["InfoValue"]
-        ))
-
     # ── Disclaimer ─────────────────────────────────────────────────────────
     elements.append(Spacer(1, 24))
     elements.append(HRFlowable(
@@ -342,6 +321,5 @@ if __name__ == "__main__":
         image_path="/tmp/test_image.png",
         predictions=test_predictions,
         gradcam_path=None,
-        shap_path=None,
     )
     print(f"✅ PDF report generated: {pdf_path}")

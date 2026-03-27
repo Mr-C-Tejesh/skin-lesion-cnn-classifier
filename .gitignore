@@ -25,3 +25,15 @@ Thumbs.db
 
 # Temp files
 *.tmp
+
+# Datasets
+HAM10000_images/
+skin_lesion_dataset/
+*.csv
+
+# Temporary Scripts
+test_shap.py
+
+# Archives
+*.zip
+*.tar.gz

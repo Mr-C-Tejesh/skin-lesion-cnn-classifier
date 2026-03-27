@@ -86,11 +86,20 @@ def generate_shap_plot(
     # Create background data
     background = create_background_data(n_background).to(device)
 
+    # Force SHAP computation to CPU (GradientExplainer hooks often hang on MPS)
+    cpu_device = torch.device("cpu")
+    model_cpu = model.to(cpu_device)
+    input_cpu = input_tensor.to(cpu_device)
+    background_cpu = background.to(cpu_device)
+
     # Initialize SHAP GradientExplainer
-    explainer = shap.GradientExplainer(model, background)
+    explainer = shap.GradientExplainer(model_cpu, background_cpu)
 
     # Compute SHAP values for the input image
-    shap_values = explainer.shap_values(input_tensor)
+    shap_values = explainer.shap_values(input_cpu)
+
+    # Restore model to original device
+    model.to(device)
 
     # shap_values is a list of arrays (one per class)
     # Get SHAP values for the target class

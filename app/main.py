@@ -28,7 +28,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from model.model import SkinLesionModel, CLASS_NAMES, NUM_CLASSES
 from app.predict import load_model, predict, preprocess_image
 from app.gradcam import generate_gradcam_overlay
-from app.shap_explain import generate_shap_plot
 from app.pdf_report import generate_pdf_report
 from app.history import init_db, insert_record, get_all_records, get_by_name, get_record_count
 
@@ -92,6 +91,7 @@ st.markdown("""
         border-radius: 0 8px 8px 0;
         padding: 16px;
         margin: 10px 0;
+        color: #202124 !important;
     }
 
     /* Disclaimer styling */
@@ -102,13 +102,22 @@ st.markdown("""
         padding: 16px;
         margin: 20px 0;
         font-size: 0.85em;
+        color: #856404 !important;
     }
 
     /* Metric styling */
-    .stMetric {
+    [data-testid="metric-container"] {
         background: #f0f2f6;
         border-radius: 8px;
-        padding: 10px;
+        padding: 16px;
+    }
+    [data-testid="metric-container"] label, 
+    [data-testid="metric-container"] div[data-testid="stMetricLabel"] p,
+    [data-testid="metric-container"] div[data-testid="stMetricValue"] div {
+        color: #1a1a1a !important;
+    }
+    [data-testid="metric-container"] div[data-testid="stMetricDelta"] div {
+        font-weight: bold;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -123,7 +132,6 @@ def init_session_state():
         "device": None,
         "predictions": None,
         "gradcam_image": None,
-        "shap_path": None,
         "uploaded_image": None,
         "uploaded_image_path": None,
         "analysis_complete": False,
@@ -261,12 +269,12 @@ if page == "🔬 Analyze":
         with st.spinner("🧠 Running AI analysis... This may take a moment."):
 
             # Step 1: Prediction
-            st.markdown("#### ⏳ Step 1/4: Classifying lesion...")
+            st.markdown("#### ⏳ Step 1/3: Classifying lesion...")
             predictions = predict(model, image, device, top_k=3)
             st.session_state.predictions = predictions
 
             # Step 2: Grad-CAM
-            st.markdown("#### ⏳ Step 2/4: Generating Grad-CAM heatmap...")
+            st.markdown("#### ⏳ Step 2/3: Generating Grad-CAM heatmap...")
             gradcam_overlay = generate_gradcam_overlay(
                 model, image, target_class=None, alpha=0.5, device=device
             )
@@ -276,22 +284,14 @@ if page == "🔬 Analyze":
             gradcam_path = os.path.join(tempfile.gettempdir(), "gradcam_overlay.png")
             gradcam_overlay.save(gradcam_path)
 
-            # Step 3: SHAP
-            st.markdown("#### ⏳ Step 3/4: Computing SHAP explanations...")
-            shap_path = generate_shap_plot(
-                model, image, target_class=None, device=device, n_background=25
-            )
-            st.session_state.shap_path = shap_path
-
-            # Step 4: Generate PDF Report
-            st.markdown("#### ⏳ Step 4/4: Generating PDF report...")
+            # Step 3: Generate PDF Report
+            st.markdown("#### ⏳ Step 3/3: Generating PDF report...")
             pdf_path = generate_pdf_report(
                 patient_name=patient_name.strip(),
                 patient_age=patient_age,
                 image_path=st.session_state.uploaded_image_path,
                 predictions=predictions,
                 gradcam_path=gradcam_path,
-                shap_path=shap_path,
             )
             st.session_state.pdf_report_path = pdf_path
 
@@ -345,43 +345,25 @@ if page == "🔬 Analyze":
         # Visual explanations
         st.markdown("## 🔍 Visual Explanations")
 
-        viz_col1, viz_col2 = st.columns(2)
-
-        with viz_col1:
-            st.markdown("### 🌡️ Grad-CAM Heatmap")
-            if st.session_state.gradcam_image:
+        st.markdown("### 🌡️ Grad-CAM Heatmap")
+        if st.session_state.gradcam_image:
+            # Center the image by putting it in a column with margins
+            _, center_col, _ = st.columns([1, 2, 1])
+            with center_col:
                 st.image(
                     st.session_state.gradcam_image,
                     caption="Grad-CAM: Regions influencing the prediction",
                     use_container_width=True,
                 )
-            st.markdown(
-                '<div class="info-card">'
-                "<b>What is Grad-CAM?</b><br>"
-                "Gradient-weighted Class Activation Mapping highlights which "
-                "regions of the image most influenced the model's decision. "
-                "Red/yellow areas indicate high importance."
-                "</div>",
-                unsafe_allow_html=True,
-            )
-
-        with viz_col2:
-            st.markdown("### 📊 SHAP Explanation")
-            if st.session_state.shap_path and os.path.exists(st.session_state.shap_path):
-                st.image(
-                    st.session_state.shap_path,
-                    caption="SHAP: Pixel-level contribution to prediction",
-                    use_container_width=True,
-                )
-            st.markdown(
-                '<div class="info-card">'
-                "<b>What is SHAP?</b><br>"
-                "SHapley Additive exPlanations show each pixel's contribution "
-                "to the final prediction, providing a detailed view of the "
-                "model's reasoning process."
-                "</div>",
-                unsafe_allow_html=True,
-            )
+        st.markdown(
+            '<div class="info-card">'
+            "<b>What is Grad-CAM?</b><br>"
+            "Gradient-weighted Class Activation Mapping highlights which "
+            "regions of the image most influenced the model's decision. "
+            "Red/yellow areas indicate high importance."
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
         st.markdown("---")
 
@@ -528,7 +510,6 @@ elif page == "ℹ️ About":
     |---------|-------------|
     | **AI Classification** | EfficientNet-B0 fine-tuned on ISIC 2019 dataset |
     | **Grad-CAM** | Visual heatmap showing regions influencing the prediction |
-    | **SHAP Analysis** | Pixel-level contribution analysis using Shapley values |
     | **PDF Reports** | Downloadable diagnostic reports with all analysis results |
     | **Patient History** | SQLite-backed record keeping with search functionality |
 
@@ -580,7 +561,7 @@ elif page == "ℹ️ About":
     ### 🛠️ Technology Stack
 
     - **Deep Learning**: PyTorch, EfficientNet-B0
-    - **Explainability**: Grad-CAM, SHAP (GradientExplainer)
+    - **Explainability**: Grad-CAM
     - **Frontend**: Streamlit
     - **PDF Generation**: ReportLab
     - **Database**: SQLite
@@ -607,8 +588,6 @@ elif page == "ℹ️ About":
        Neural Networks.* ICML 2019.
     3. Selvaraju, R. R. et al. *Grad-CAM: Visual Explanations from Deep Networks
        via Gradient-based Localization.* ICCV 2017.
-    4. Lundberg, S. M. & Lee, S.-I. *A Unified Approach to Interpreting Model
-       Predictions.* NeurIPS 2017.
     """)
 
     st.markdown("---")
