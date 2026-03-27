@@ -1,3 +1,13 @@
+---
+title: Skin Lesion Classifier
+emoji: ⚕️
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+app_file: app/main.py
+pinned: false
+---
+
 # Skin Lesion CNN Classifier
 
 CNN-based skin lesion classifier for early cancer detection.
