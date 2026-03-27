@@ -11,6 +11,8 @@ pinned: false
 
 CNN-based skin lesion classifier for early cancer detection.
 
+## 🚀 Live Demo
+**Try the interactive web application here:** [Skin Lesion Classifier on Hugging Face Spaces](https://huggingface.co/spaces/tejesh-c/skin-lesion-classifier-v2)
 ## Features
 - 7-class classification using EfficientNet-B0 (transfer learning)
 - Grad-CAM heatmap visualizations
