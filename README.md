@@ -3,8 +3,7 @@ title: Skin Lesion Classifier
 emoji: ⚕️
 colorFrom: blue
 colorTo: green
-sdk: streamlit
-app_file: app/main.py
+sdk: docker
 pinned: false
 ---
 
