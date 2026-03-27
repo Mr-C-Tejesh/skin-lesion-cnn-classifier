@@ -13,11 +13,8 @@ ISIC 2019 / HAM10000 — Download the full dataset from [ISIC Archive](https://w
 We've also included a few testing images in the `samples/` directory so you can demo the application immediately without downloading the massive 2.5GB dataset!
 
 ## Model Checkpoint
-To run the Streamlit Web App, you will need the trained weights (`best_model.pth`). 
-Due to GitHub file size limits, the checkpoint is hosted externally:
-1. Download the `best_model.pth` checkpoint from [Google Drive (Link Here)](#) or [Hugging Face (Link Here)](#).
-2. Place the downloaded file tightly inside the `checkpoints/` directory of this project:
-   `checkpoints/best_model.pth`
+The application is configured to automatically securely download the trained `best_model.pth` weights (19MB) directly from our [Hugging Face Model Hub](https://huggingface.co/tejesh-c/skin-lesion-efficientnet) on its first run.
+No manual downloading is required!
 
 ## Setup
 ```bash

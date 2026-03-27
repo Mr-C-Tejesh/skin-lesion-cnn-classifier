@@ -13,6 +13,7 @@ import torch
 import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
+from huggingface_hub import hf_hub_download
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -58,12 +59,26 @@ def load_model(checkpoint_path: str = DEFAULT_CHECKPOINT, device: torch.device =
     model = SkinLesionModel(num_classes=NUM_CLASSES, pretrained=False)
 
     # Load trained weights
+    if not os.path.exists(checkpoint_path):
+        print(f"☁️ Checkpoint not found at: {checkpoint_path}")
+        print("   Downloading weights from Hugging Face hub (tejesh-c/skin-lesion-efficientnet)...")
+        try:
+            os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
+            hf_hub_download(
+                repo_id="tejesh-c/skin-lesion-efficientnet",
+                filename="best_model.pth",
+                local_dir=os.path.dirname(checkpoint_path)
+            )
+            print(f"✅ Download complete!")
+        except Exception as e:
+            print(f"❌ Failed to download model: {e}")
+
     if os.path.exists(checkpoint_path):
         state_dict = torch.load(checkpoint_path, map_location=device)
         model.load_state_dict(state_dict)
         print(f"✅ Model loaded from: {checkpoint_path}")
     else:
-        print(f"⚠️  Checkpoint not found at: {checkpoint_path}")
+        print(f"⚠️  Checkpoint still not found at: {checkpoint_path}")
         print("   Using randomly initialized model (for demo purposes).")
 
     model = model.to(device)
